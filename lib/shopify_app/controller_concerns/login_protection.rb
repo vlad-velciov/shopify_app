@@ -100,7 +100,7 @@ module ShopifyApp
       query_params = {}
       query_params[:shop] = sanitized_params[:shop] if params[:shop].present?
 
-      return_to = session[:return_to] || params[:return_to]
+      return_to = return_to_relative_path
 
       if return_to.present? && return_to_param_required?
         query_params[:return_to] = return_to
@@ -114,6 +114,21 @@ module ShopifyApp
 
       query_params[:top_level] = true if top_level
       query_params
+    end
+
+    def return_to_relative_path
+      relative_path(session[:return_to]) || relative_path(params[:return_to])
+    end
+
+    def relative_path(url)
+      return if url.nil?
+      uri = URI.parse(url)
+      path_with_query_params = compant_and_join_with([uri.path, uri.query], '?')
+      compant_and_join_with([path_with_query_params, uri.fragment], '#')
+    end
+
+    def compant_and_join_with(array, join_string)
+      array.compact.join(join_string)
     end
 
     def return_to_param_required?
