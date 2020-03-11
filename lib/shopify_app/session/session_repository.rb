@@ -2,21 +2,23 @@ module ShopifyApp
   class SessionRepository
     class ConfigurationError < StandardError; end
 
-    EXPECTED_METHODS = [:store, :retrieve, :retrieve_by_jwt].freeze
+    EXPECTED_METHODS = [:store, :retrieve].freeze
+    EXPECTED_SHOP_STORAGE_METHODS = (EXPECTED_METHODS + [:retrieve_by_shopify_domain]).freeze
+    EXPECTED_USER_STORAGE_METHODS = (EXPECTED_METHODS + [:retrieve_by_shopify_user_id]).freeze
 
     class << self
       def shop_storage=(storage)
         @shop_storage = storage
         return unless storage
 
-        raise ArgumentError, "shop storage does not have expected interface" unless expected_interface?(shop_storage)
+        raise ArgumentError, "shop storage does not have expected interface" unless expected_shop_interface?(shop_storage)
       end
 
       def user_storage=(storage)
         @user_storage = storage
         return unless storage
 
-        raise ArgumentError, "user storage does not have expected interface" unless expected_interface?(user_storage)
+        raise ArgumentError, "user storage does not have expected interface" unless expected_user_interface?(user_storage)
       end
 
       def retrieve_shop_session(id)
@@ -27,12 +29,12 @@ module ShopifyApp
         user_storage.retrieve(id)
       end
 
-      def retrieve_shop_session_by_jwt(payload)
-        shop_storage.retrieve_by_jwt(payload)
+      def retrieve_shop_session_by_shopify_domain(shopify_domain)
+        shop_storage.retrieve_by_shopify_domain(shopify_domain)
       end
 
-      def retrieve_user_session_by_jwt(payload)
-        user_storage.retrieve_by_jwt(payload)
+      def retrieve_user_session_by_shopify_user_id(user_id)
+        user_storage.retrieve_by_shopify_user_id(user_id)
       end
 
       def store_shop_session(session)
@@ -63,8 +65,12 @@ module ShopifyApp
         @user_storage.respond_to?(:safe_constantize) ? @user_storage.safe_constantize : @user_storage
       end
 
-      def expected_interface?(storage)
-        EXPECTED_METHODS.all? { |method| storage.respond_to?(method) }
+      def expected_shop_interface?(storage)
+        EXPECTED_SHOP_STORAGE_METHODS.all? { |method| storage.respond_to?(method)  }
+      end
+
+      def expected_user_interface?(storage)
+        EXPECTED_USER_STORAGE_METHODS.all? { |method| storage.respond_to?(method) }
       end
     end
   end
